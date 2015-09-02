@@ -1,6 +1,8 @@
 package org.tinydvr.schedulesdirect.api
 
+import net.liftweb.json.{JsonParser, MappingException}
 import org.joda.time.DateTime
+import scala.util.Try
 
 /**
  * The error codes that can be returned by the api, indexed by response.
@@ -15,13 +17,13 @@ trait SchedulesDirectErrors {
 
   class SchedulesDirectErrors extends AsyncHttpHelpers {
 
-    def extract(code: Int, body: String): Exception = {
+    def extract(code: Int, body: String): Option[Exception] = {
       (for {
-        response <- fromJson[ErrorResponse](body)
+        response <- Try(fromJson[ErrorResponse](body)).toOption
         toException <- errors.byResponse.get(response.response)
       } yield {
         toException(response.code, response.serverID, response.message, response.datetime)
-      }).getOrElse(UnknownResponseException(code, body))
+      })
     }
 
     val byResponse = Map(
@@ -56,6 +58,7 @@ trait SchedulesDirectErrors {
       REQUIRED_REQUEST_MISSING -> RequiredRequestMissingException,
       SCHEDULE_NOT_FOUND -> ScheduleNotFoundException,
       SCHEDULE_QUEUED -> ScheduleQueuedException,
+      SCHEDULE_RANGE_EXCEEDED -> ScheduleRangeExceededException,
       SERVICE_OFFLINE -> ServiceOfflineException,
       STATIONID_NOT_FOUND -> StationidNotFoundException,
       TOKEN_MISSING -> TokenMissingException,
@@ -98,6 +101,7 @@ object SchedulesDirectResponseCodes {
   val REQUIRED_REQUEST_MISSING = "REQUIRED_REQUEST_MISSING"
   val SCHEDULE_NOT_FOUND = "SCHEDULE_NOT_FOUND"
   val SCHEDULE_QUEUED = "SCHEDULE_QUEUED"
+  val SCHEDULE_RANGE_EXCEEDED = "SCHEDULE_RANGE_EXCEEDED"
   val SERVICE_OFFLINE = "SERVICE_OFFLINE"
   val STATIONID_NOT_FOUND = "STATIONID_NOT_FOUND"
   val TOKEN_MISSING = "TOKEN_MISSING"
@@ -170,6 +174,8 @@ case class RequiredRequestMissingException(code: Int, serverID: String, message:
 case class ScheduleNotFoundException(code: Int, serverID: String, message: String, datetime: DateTime) extends Exception(message)
 
 case class ScheduleQueuedException(code: Int, serverID: String, message: String, datetime: DateTime) extends Exception(message)
+
+case class ScheduleRangeExceededException(code: Int, serverID: String, message: String, datetime: DateTime) extends Exception(message)
 
 case class ServiceOfflineException(code: Int, serverID: String, message: String, datetime: DateTime) extends Exception(message)
 
