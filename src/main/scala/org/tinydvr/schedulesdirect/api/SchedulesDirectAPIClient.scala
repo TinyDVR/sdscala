@@ -1,35 +1,36 @@
 package org.tinydvr.schedulesdirect.api
 
 import dispatch.{HttpExecutor, Req}
-import scala.concurrent._
+import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
+import scala.concurrent._
 
 class SchedulesDirectAPIClient(token: String)(
   implicit val http: HttpExecutor,
   implicit val execution: ExecutionContext
 ) extends AsyncHttpHelpers with SchedulesDirectEndpoints with SchedulesDirectErrors {
 
-  import SchedulesDirectAPIClient._
+  import org.tinydvr.schedulesdirect.api.SchedulesDirectAPIClient._
 
   //
   // API Endpoints.
   //
 
   def addLineup(uri: String): Future[ChangeLineupResponse] = {
-    authenticatedRequest[ChangeLineupResponse](endpoints.base + uri, Map(), _.PUT)
+    authenticatedRequest[ChangeLineupResponse](endpoints.host + uri, Map(), _.PUT)
   }
 
   def deleteLineup(uri: String): Future[ChangeLineupResponse] = {
-    authenticatedRequest[ChangeLineupResponse](endpoints.base + uri, Map(), _.DELETE)
+    authenticatedRequest[ChangeLineupResponse](endpoints.host + uri, Map(), _.DELETE)
   }
 
   def getClient(): Future[GetClientResponse] = {
     authenticatedRequest[GetClientResponse](endpoints.client)
   }
 
-  def getHeadends(country: String, zipCode: String): Future[Map[String, GetHeadendResponse]] = {
+  def getHeadends(country: String, zipCode: String): Future[List[GetHeadendResponse]] = {
     val params = Map(PARAM_COUNTRY -> country, PARAM_POSTAL_CODE -> zipCode)
-    authenticatedRequest[Map[String, GetHeadendResponse]](endpoints.headends, params)
+    authenticatedRequest[List[GetHeadendResponse]](endpoints.headends, params)
   }
 
   def getLineup(uri: String): Future[GetLineupResponse] = {
@@ -41,12 +42,32 @@ class SchedulesDirectAPIClient(token: String)(
   }
 
   def getPrograms(ids: Set[String]): Future[List[ProgramResponse]] = {
-    batchPostRequests[ProgramResponse](endpoints.programs, ids.grouped(MAX_PROGRAM_IDS).toList)
+    val headers = Map(HEADER_ACCEPT_ENCODING -> GZIP_ENCODING)
+    def getPrograms(ids: Iterable[String]) =
+      authenticatedRequest[List[ProgramResponse]](endpoints.programs, Map(), r => r, headers, Some(ids))
+    batchRequests(ids, MAX_PROGRAM_IDS, getPrograms).map(_.toList)
   }
 
-  def getSchedules(ids: Set[String], days: Int): Future[List[SchedulesResponse]] = {
-    val requests = ids.map(SchedulesRequest(_, days)).grouped(MAX_PROGRAM_IDS).toList
-    batchPostRequests[SchedulesResponse](endpoints.schedules, requests)
+  def getSchedules(stationIds: Set[String], days: Iterable[LocalDate]): Future[List[SchedulesResponse]] = {
+    val headers = Map(HEADER_ACCEPT_ENCODING -> GZIP_ENCODING)
+    val dates = days.map(_.toString(LOCAL_DATE_FORMAT)).toList
+    val scheduleRequests = stationIds.map(SchedulesRequest(_, dates))
+    def getSchedules(ids: Iterable[SchedulesRequest]) =
+      authenticatedRequest[List[SchedulesResponse]](endpoints.schedules, Map(), r => r, headers, Some(ids))
+    batchRequests(scheduleRequests, MAX_PROGRAM_IDS, getSchedules).map(_.toList)
+  }
+
+  def getSchedulesMd5(stationIds: Set[String], days: Iterable[LocalDate]): Future[Map[String, Map[LocalDate, ScheduleDateMd5]]] = {
+    val headers = Map(HEADER_ACCEPT_ENCODING -> GZIP_ENCODING)
+    val dates = days.map(_.toString(LOCAL_DATE_FORMAT)).toList
+    val scheduleRequests = stationIds.map(SchedulesRequest(_, dates))
+    def getSchedules(ids: Iterable[SchedulesRequest]) =
+      authenticatedRequest[Map[String, Map[String, ScheduleDateMd5]]](endpoints.schedulesMd5, Map(), r => r, headers, Some(ids))
+    batchRequests(scheduleRequests, MAX_PROGRAM_IDS, getSchedules).map(_.toMap.mapValues(byDate => {
+      byDate.map {
+        case (dateString, md5) => (localDateFormatter.parseLocalDate(dateString), md5)
+      }
+    }))
   }
 
   def getStatus(): Future[GetStatusResponse] = {
@@ -66,20 +87,12 @@ class SchedulesDirectAPIClient(token: String)(
     httpRequest(endpoint, errors.extract, body, params, transformations, headers + (HEADER_TOKEN -> token))
   }
 
-  private def batchPostRequests[S](endpoint: String,
-                                   bodies: Traversable[AnyRef]
-                                   )(implicit mf: scala.reflect.Manifest[S]): Future[List[S]] = {
-    val headers =  Map(HEADER_TOKEN -> token, HEADER_ACCEPT_ENCODING -> REQUIRED_ENCODING)
+  private def batchRequests[T, S](bodies: Iterable[T], groupSize: Int, f: Iterable[T] => Future[Iterable[S]]): Future[Iterable[S]] = {
     Future.sequence(
-      bodies.map(body => {
-        gzippedBatchRequest(endpoint, Some(body), headers).
-          map(_.split(LINE_BREAK_REGEX).toList.flatMap(line => {
-           fromJson[S](line)
-          }))
-      })
-    ).map(_.flatten.toList)
+      bodies.grouped(groupSize).map(f).toList
+    )
+  }.map(_.flatten)
 
-  }
 }
 
 /**
@@ -95,7 +108,7 @@ private[api] object SchedulesDirectAPIClient {
   //
 
   val MAX_PROGRAM_IDS = 5000 // https://github.com/SchedulesDirect/JSON-Service/wiki/API-20140530
-  val REQUIRED_ENCODING = "deflate,gzip" // should be fixed in future versions?
+  val GZIP_ENCODING = "deflate,gzip" // should be fixed in future versions?
 
   //
   // Formats
@@ -128,4 +141,5 @@ private[api] object SchedulesDirectAPIClient {
 
   val PARAM_COUNTRY = "country"
   val PARAM_POSTAL_CODE = "postalcode"
+
 }
