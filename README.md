@@ -31,14 +31,14 @@ val token = SchedulesDirectAuthenticator.getToken(username, password).getResult.
 val client = new SchedulesDirectAPIClient(token)
 
 // see the headends from your location
-val headEnds = client.getHeadends("USA", zipCode).getResult
+val headEnds = client.getHeadends("USA", "19146").getResult
 
 // add a lineup to your account
-client.addLineup("/lineups/USA-OTA-" + zipCode).getResult
+client.addLineup(headEnds.head.lineups.head.uri).getResult
 
 // download the lineups for your account
-val lineups = client.getLineups.getResult
+val lineups = client.getLineups.getResult.lineups
 
 // download the StationID / channel mapping for a lineup
-val stationMap = client.getLineup(lineups.lineups.head.uri).getResult
+val stationMap = client.getLineup(lineups.head.uri).getResult
 ```
