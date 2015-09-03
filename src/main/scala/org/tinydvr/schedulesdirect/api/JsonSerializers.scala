@@ -32,18 +32,3 @@ class LocalDateSerializer extends Serializer[LocalDate] {
     case x: LocalDate => JString(SchedulesDirectAPIClient.localDateFormatter.print(x))
   }
 }
-
-class StringKeyedMapSerializer extends Serializer[Map[String, Any]] {
-  private val Class = classOf[Map[String, Any]]
-
-  def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), Map[String, Any]] = {
-    // not sure why t
-    Map()
-  }
-
-  def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
-    case m: Map[_, _] => JObject(m.map {
-      case (k: String, v) => JField(k, Extraction.decompose(v))
-    }.toList)
-  }
-}

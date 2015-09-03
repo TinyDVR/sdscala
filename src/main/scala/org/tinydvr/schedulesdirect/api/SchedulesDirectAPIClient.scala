@@ -10,7 +10,7 @@ class SchedulesDirectAPIClient(token: String)(
   implicit val execution: ExecutionContext
 ) extends AsyncHttpHelpers with SchedulesDirectEndpoints with SchedulesDirectErrors {
 
-  import org.tinydvr.schedulesdirect.api.SchedulesDirectAPIClient._
+  import SchedulesDirectAPIClient._
 
   //
   // API Endpoints.
