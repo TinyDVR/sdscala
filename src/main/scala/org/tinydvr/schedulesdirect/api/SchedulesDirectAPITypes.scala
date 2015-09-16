@@ -107,11 +107,6 @@ case class ProgramResponse(programID: String,
                            cast: List[ProgramCast],
                            crew: List[ProgramCast],
                            recommendations: List[ProgramRecommendation])
-//                           contentAdvisory: Option[Map[String, List[String]]],
-//                           contentRating: List[ProgramContentRation],
-//
-//                           movie: Option[ProgramMovieData],
-//                           )
 
 case class ProgramRecommendation(programID: String, title120: String)
 
@@ -154,7 +149,12 @@ case class SchedulesRequest(stationID: String, date: List[String])
 
 case class SchedulesResponse(stationID: String,
                              programs: List[ProgramSchedule],
-                             metadata: ScheduleMetaData)
+                             metadata: Option[ScheduleMetaData],
+                             // the following typically indicate an error
+                             code: Option[Int],
+                             response: Option[String],
+                             requestedDate: Option[String],
+                             message: Option[String])
 
 case class ScheduleMetaData(modified: DateTime, md5: String, startDate: LocalDate)
 
