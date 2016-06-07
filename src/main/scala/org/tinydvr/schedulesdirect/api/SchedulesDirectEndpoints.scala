@@ -6,14 +6,14 @@ trait SchedulesDirectEndpoints {
     import SchedulesDirectEndpoints._
     val base = SD_BASE
     val host = SD_HOST
-    val client = SD_BASE + "/version/" + SchedulesDirectAPIClient.SD_USER_AGENT
-    val headends = SD_BASE + "/headends"
-    val lineups = SD_BASE + "/lineups"
-    val programs = SD_BASE + "/programs"
-    val schedules = SD_BASE + "/schedules"
-    val schedulesMd5 = SD_BASE + "/schedules/md5"
-    val status = SD_BASE + "/status"
-    val token = SD_BASE + "/token"
+    val client = SD_BASE + "version/" + SchedulesDirectAPIClient.SD_USER_AGENT
+    val headends = SD_BASE + "headends"
+    val lineups = SD_BASE + "lineups"
+    val programs = SD_BASE + "programs"
+    val schedules = SD_BASE + "schedules"
+    val schedulesMd5 = SD_BASE + "schedules/md5"
+    val status = SD_BASE + "status"
+    val token = SD_BASE + "token"
   }
 
 }

@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinydvr</groupId>
     <artifactId>schedules-direct-client</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <name>Schedules Direct Client</name>
     <description>A scala client for schedules direct's API.</description>
     <inceptionYear>2014</inceptionYear>
@@ -12,7 +12,7 @@
     <properties>
         <commons-codec.version>1.6</commons-codec.version>
         <commons-io.version>1.4</commons-io.version>
-        <dispatch.version>0.11.2</dispatch.version>
+        <dispatch.version>0.11.3</dispatch.version>
         <joda-time.version>2.0</joda-time.version>
         <joda-convert.version>1.1</joda-convert.version>
         <lift.version>2.5.1</lift.version>
