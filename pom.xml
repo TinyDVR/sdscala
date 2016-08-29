@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.tinydvr</groupId>
     <artifactId>schedules-direct-client</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <name>Schedules Direct Client</name>
     <description>A scala client for schedules direct's API.</description>
     <inceptionYear>2014</inceptionYear>
