@@ -4,6 +4,7 @@ import dispatch.{HttpExecutor, Req, url}
 import net.liftweb.json._
 import org.apache.commons.io.IOUtils
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 trait AsyncHttpHelpers {
 
@@ -29,13 +30,16 @@ trait AsyncHttpHelpers {
     val isCompressed = headers.get(HEADER_ACCEPT_ENCODING) == Some(GZIP_ENCODING)
     val request = body.map(Serialization.write(_)).map(initial << _).getOrElse(initial)
     http(request > (rs => {
-      val body =
-        if (isCompressed) {
+      val decompressed = if (isCompressed) {
+        Try {
           val stream = new java.util.zip.GZIPInputStream(rs.getResponseBodyAsStream)
           IOUtils.toString(stream)
-        } else {
-          rs.getResponseBody
-        }
+        }.toOption
+      } else {
+        None
+      }
+      val body = decompressed.getOrElse(rs.getResponseBody)
+
       try {
         fromJson(body)
       } catch {
